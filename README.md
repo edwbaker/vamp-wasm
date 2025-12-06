@@ -9,7 +9,7 @@ This directory contains a WebAssembly implementation of a Vamp Plugin Host, allo
 
 ## Building
 
-This project uses `make` for building. On Windows, a `make.cmd` wrapper is provided to use `mingw32-make` if available.
+This project uses `make` for building.
 
 To build everything:
 ```bash
@@ -20,7 +20,6 @@ To build individual components:
 ```bash
 make host
 make plugins
-make eco-plugins
 ```
 
 ## Usage
@@ -88,5 +87,4 @@ The host supports dynamic loading of plugins compiled as Emscripten side modules
 
 - `src/WasmHost.cpp`: The C++ host implementation using Embind.
 - `web-demo/`: Simple web interface for testing.
-- `ecoacoustic-plugins/`: Source code for the ecoacoustic plugins.
 - `inst/vamp/`: Source code for the Vamp SDK and example plugins.

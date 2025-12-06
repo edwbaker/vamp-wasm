@@ -1,0 +1,6 @@
+repo: 6479539d1b32056cb2477596121ab072e31e5b42
+node: 0e32c328b02afefa1e962a05b087de0cc410ec14
+branch: default
+latesttag: vamp-plugin-sdk-v2.10
+latesttagdistance: 1
+changessincelatesttag: 1

@@ -1,0 +1,17 @@
+{
+  "name": "vamp-wasm-host",
+  "version": "0.1.0",
+  "description": "WebAssembly Vamp Plugin Host",
+  "main": "dist/vamp-host.js",
+  "scripts": {
+    "build": "make",
+    "clean": "make clean",
+    "test": "node test.js",
+    "start": "serve ."
+  },
+  "author": "ReVAMP",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}

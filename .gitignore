@@ -1,0 +1,6 @@
+emsdk/
+dist/
+node_modules/
+ecoacoustic-plugins/
+make.cmd
+

@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "WebAssembly Vamp Plugin Host",
   "main": "dist/vamp-host.js",
+  "files": [
+    "dist/vamp-host.js",
+    "dist/vamp-host.wasm",
+    "dist/vamp-example-plugins.so"
+  ],
   "scripts": {
     "build": "make",
     "clean": "make clean",

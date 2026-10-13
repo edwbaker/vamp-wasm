@@ -7,17 +7,21 @@ VampHostModule().then(hostModule => {
     console.log("Vamp Host Module Loaded");
     
     // Mount the plugin file into the WASM virtual filesystem
-    const plugins = ['vamp-example-plugins.so', 'ecoacoustic-plugins.so'];
+    // [file in dist/, name in the virtual filesystem]; the plugin key prefix is the latter's basename
+    const plugins = [
+        ['vamp-example-plugins.so', 'vamp-example-plugins.so'],
+        ['vamp-ecoacoustics.wasm', 'vamp-ecoacoustics.so'],
+    ];
     
     try { hostModule.FS.mkdir('/vamp'); } catch(e) {}
 
-    plugins.forEach(pluginFileName => {
+    plugins.forEach(([pluginFileName, vfsName]) => {
         const pluginPath = path.join(__dirname, 'dist', pluginFileName);
         if (fs.existsSync(pluginPath)) {
             console.log(`Loading plugin binary from ${pluginPath}...`);
             const pluginBinary = fs.readFileSync(pluginPath);
-            hostModule.FS.writeFile('/vamp/' + pluginFileName, pluginBinary);
-            console.log(`Wrote ${pluginFileName} to virtual filesystem at /vamp/`);
+            hostModule.FS.writeFile('/vamp/' + vfsName, pluginBinary);
+            console.log(`Wrote ${pluginFileName} to virtual filesystem at /vamp/${vfsName}`);
         } else {
             console.log(`Plugin binary ${pluginFileName} not found.`);
         }
@@ -40,11 +44,12 @@ VampHostModule().then(hostModule => {
     console.log("Available Plugins:", pluginsArray);
     
     // Test loading an ecoacoustic plugin
-    const ecoPlugin = "ecoacoustic-plugins:aci"; // Assuming identifier is 'aci'
+    const ecoPlugin = "vamp-ecoacoustics:aci";
     if (host.loadPlugin(ecoPlugin)) {
         console.log(`Plugin loaded: ${ecoPlugin}`);
     } else {
-        console.log(`Failed to load: ${ecoPlugin}`);
+        console.error(`Failed to load: ${ecoPlugin}`);
+        process.exitCode = 1;
     }
 
     // Example of how one would process if a plugin was loaded
@@ -62,6 +67,7 @@ VampHostModule().then(hostModule => {
         const features = host.process(audioBlock, 0.0);
         console.log("Features:", JSON.stringify(features, null, 2));
     } else {
-        console.log("Failed to load plugin");
+        console.error("Failed to load plugin");
+        process.exitCode = 1;
     }
 });

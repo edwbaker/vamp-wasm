@@ -49,9 +49,14 @@ async function loadSideModule() {
     
     try { hostModule.FS.mkdir('/vamp'); } catch(e) {}
 
-    const plugins = ['vamp-example-plugins.so', 'ecoacoustic-plugins.so'];
+    // [file in dist/, name in the virtual filesystem]. The plugin key prefix comes from the
+    // filename, so vamp-ecoacoustics.wasm becomes vamp-ecoacoustics:<plugin>.
+    const plugins = [
+        ['vamp-example-plugins.so', 'vamp-example-plugins.so'],
+        ['vamp-ecoacoustics.wasm', 'vamp-ecoacoustics.so'],
+    ];
 
-    for (const pluginName of plugins) {
+    for (const [pluginName, vfsName] of plugins) {
         try {
             // Fetch the plugin binary
             const response = await fetch(`../dist/${pluginName}`);
@@ -63,7 +68,7 @@ async function loadSideModule() {
             const buffer = await response.arrayBuffer();
             const data = new Uint8Array(buffer);
             
-            hostModule.FS.writeFile(`/vamp/${pluginName}`, data);
+            hostModule.FS.writeFile(`/vamp/${vfsName}`, data);
             console.log(`${pluginName} written to virtual filesystem`);
         } catch (err) {
             console.error(`Error loading ${pluginName}:`, err);

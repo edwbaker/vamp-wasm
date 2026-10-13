@@ -53,20 +53,10 @@ EXAMPLE_PLUGIN_SOURCES = \
     inst/vamp/src/vamp-sdk/PluginAdapter.cpp \
     inst/vamp/src/vamp-sdk/RealTime.cpp
 
-ECO_PLUGIN_SOURCES = \
-    ecoacoustic-plugins/ACIPlugin.cpp \
-    ecoacoustic-plugins/AmplitudeIndexPlugin.cpp \
-    ecoacoustic-plugins/TemporalEntropyPlugin.cpp \
-    ecoacoustic-plugins/plugins.cpp \
-    inst/vamp/src/vamp-sdk/PluginAdapter.cpp \
-    inst/vamp/src/vamp-sdk/RealTime.cpp \
-    inst/vamp/src/vamp-sdk/FFT.cpp \
-    inst/vamp/src/vamp-sdk/FFTimpl.cpp
-
 # Targets
-.PHONY: all host plugins eco-plugins clean
+.PHONY: all host plugins clean
 
-all: host plugins eco-plugins
+all: host plugins
 
 $(DIST_DIR):
 	$(MKDIR_CMD)
@@ -76,9 +66,6 @@ host: $(DIST_DIR)
 
 plugins: $(DIST_DIR)
 	$(CXX) $(CXXFLAGS) $(SIDE_LDFLAGS) -o $(DIST_DIR)/vamp-example-plugins.so $(EXAMPLE_PLUGIN_SOURCES)
-
-eco-plugins: $(DIST_DIR)
-	$(CXX) $(CXXFLAGS) -Iecoacoustic-plugins -D_VAMP_IN_PLUGINSDK $(SIDE_LDFLAGS) -o $(DIST_DIR)/ecoacoustic-plugins.so $(ECO_PLUGIN_SOURCES)
 
 clean:
 	$(CLEAN_CMD)

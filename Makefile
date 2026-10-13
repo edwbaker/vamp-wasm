@@ -2,13 +2,13 @@
 ifdef OS
    # Setup Emscripten environment for each command
    # Use cmd /c to ensure batch files are handled correctly
-   CXX = cmd /c "call emsdk\emsdk_env.bat && call emcc"
+   CXX = cmd /c "call emsdk\emsdk_env.bat && call em++"
    RM = del /Q
    FixPath = $(subst /,\,$1)
    MKDIR_CMD = if not exist $(DIST_DIR) mkdir $(DIST_DIR)
    CLEAN_CMD = if exist $(DIST_DIR) rmdir /s /q $(DIST_DIR)
 else
-   CXX = emcc
+   CXX = em++
    RM = rm -rf
    FixPath = $1
    MKDIR_CMD = mkdir -p $(DIST_DIR)
@@ -20,16 +20,17 @@ DIST_DIR = dist
 
 # Host Flags
 HOST_LDFLAGS = -s WASM=1 -s MODULARIZE=1 -s EXPORT_NAME="VampHostModule" \
-               -s ALLOW_MEMORY_GROWTH=1 --bind -s ENVIRONMENT=web,node \
+               -s ALLOW_MEMORY_GROWTH=1 --bind -s ENVIRONMENT=web,worker,node \
                -s MAIN_MODULE=1 -s "EXPORTED_RUNTIME_METHODS=['FS']"
 
 # Side Module Flags
 SIDE_LDFLAGS = -s SIDE_MODULE=1
 
 # Source Files
+# The host must not contain the plugin SDK (vamp-sdk/*.cpp): Emscripten resolves a side
+# module's symbols to the main module's definitions first, so plugins would run the
+# host's copy of PluginAdapter, which breaks if their SDK copy differs.
 HOST_SOURCES = \
-    inst/vamp/src/vamp-sdk/PluginAdapter.cpp \
-    inst/vamp/src/vamp-sdk/RealTime.cpp \
     inst/vamp/src/vamp-hostsdk/PluginBufferingAdapter.cpp \
     inst/vamp/src/vamp-hostsdk/PluginChannelAdapter.cpp \
     inst/vamp/src/vamp-hostsdk/PluginHostAdapter.cpp \

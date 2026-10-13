@@ -63,7 +63,14 @@ You can use the generated `vamp-host.js` in your own web or Node.js projects.
 
         // 4. Load a Plugin
         if (host.loadPlugin("my-plugin:identifier")) {
-            
+
+            // Metadata, preferred block/step sizes, parameters and outputs.
+            // Output indices in the features from process() index info.outputs.
+            const info = host.getPluginInfo();
+
+            // Parameters must be set before initialise()
+            host.setParameter("threshold", 0.5);
+
             // 5. Initialize (channels, stepSize, blockSize)
             host.initialise(1, 512, 1024);
 
@@ -82,6 +89,8 @@ You can use the generated `vamp-host.js` in your own web or Node.js projects.
 The host supports dynamic loading of plugins compiled as Emscripten side modules (`.so`).
 - Plugins must be placed in the virtual filesystem (e.g., `/vamp`).
 - The host is configured to look in `/vamp` by setting the `VAMP_PATH` environment variable.
+- Plugins are loaded with the input-domain and channel-count adapters (`ADAPT_ALL_SAFE`, as in ReVAMP), so always pass time-domain audio: frequency-domain plugins receive spectra, and channel counts are mixed or duplicated as needed.
+- In a browser, run the host in a Web Worker: `dlopen()` compiles the plugin synchronously, which browsers only allow for small modules on the main thread.
 
 ## Project Structure
 

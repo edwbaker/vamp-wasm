@@ -5,6 +5,7 @@
 #include <vamp-hostsdk/PluginLoader.h>
 #include <vamp-hostsdk/RealTime.h>
 #include <iostream>
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <map>
@@ -50,12 +51,15 @@ public:
             delete m_plugin;
             m_plugin = nullptr;
         }
+        m_initialised = false;
 
         PluginLoader *loader = PluginLoader::getInstance();
         // Note: PluginLoader in Wasm will only find plugins if they are in the virtual filesystem
         // and dlopen is supported, OR if we statically link them and register them.
-        m_plugin = loader->loadPlugin(pluginKey, m_sampleRate);
-        
+        // ADAPT_ALL_SAFE (input domain + channel count) matches ReVAMP, so frequency-domain
+        // plugins receive spectra and channel-count mismatches are mixed/augmented.
+        m_plugin = loader->loadPlugin(pluginKey, m_sampleRate, PluginLoader::ADAPT_ALL_SAFE);
+
         if (!m_plugin) {
             std::cerr << "Failed to load plugin: " << pluginKey << std::endl;
             return false;
@@ -65,17 +69,22 @@ public:
     }
 
     bool initialise(int channels, int stepSize, int blockSize) {
-        if (!m_plugin) return false;
+        m_initialised = false;
+        if (!m_plugin || channels < 1 || stepSize < 1 || blockSize < 1) return false;
         m_channels = channels;
         m_stepSize = stepSize;
         m_blockSize = blockSize;
-        return m_plugin->initialise(channels, stepSize, blockSize);
+        m_initialised = m_plugin->initialise(channels, stepSize, blockSize);
+        return m_initialised;
     }
 
     // Process a single block of audio
     // inputChannels is a JS array of Float32Arrays
     val process(val inputChannels, double timestampSec) {
-        if (!m_plugin) return val::null();
+        if (!m_plugin || !m_initialised) {
+            std::cerr << "process() called before a successful initialise()" << std::endl;
+            return val::null();
+        }
 
         int numChannels = inputChannels["length"].as<int>();
         if (numChannels != m_channels) {
@@ -83,41 +92,26 @@ public:
             return val::null();
         }
 
-        // Allocate buffers
-        float** buffers = new float*[numChannels];
+        // Each channel is copied into a buffer of exactly m_blockSize samples: the plugin
+        // reads that many, so a short final block is zero-padded and excess is ignored.
         std::vector<std::vector<float>> tempStorage(numChannels);
+        std::vector<float*> buffers(numChannels);
 
         for (int c = 0; c < numChannels; ++c) {
             val channelData = inputChannels[c];
-            // Copy data from JS Float32Array to C++ vector
-            // We assume channelData is a Float32Array or Array
             unsigned int length = channelData["length"].as<unsigned int>();
-            tempStorage[c].resize(length);
-            
-            // Efficient copy using memory view
-            // We create a view on the C++ vector memory and ask JS to copy data into it
-            // typed_memory_view returns a memory_view object, not a val.
-            // We can use it directly to call JS methods if we wrap it in val() or use it as an argument.
-            // However, memory_view itself doesn't have a .call method like val does.
-            // The correct pattern is to pass the view to a JS function or use it in a way that Embind handles.
-            
-            // Actually, typed_memory_view returns a helper object that converts to a JS TypedArray when passed to JS.
-            // To call "set" on it from C++, we need to be careful.
-            // The easiest way to copy FROM JS TO C++ efficiently is to expose the C++ memory as a TypedArray
-            // and call .set() on that TypedArray in JS land.
-            
-            // But here we are in C++.
-            // Let's use the val wrapper to treat the memory view as a JS object (TypedArray)
-            val view = val(typed_memory_view(length, tempStorage[c].data()));
-            view.call<void>("set", channelData);
-            
+            unsigned int n = std::min(length, (unsigned int)m_blockSize);
+            tempStorage[c].assign(m_blockSize, 0.0f);
+
+            // View the C++ buffer as a typed array and let JS copy into it
+            val view = val(typed_memory_view(n, tempStorage[c].data()));
+            view.call<void>("set", n < length ? channelData.call<val>("subarray", 0, n) : channelData);
+
             buffers[c] = tempStorage[c].data();
         }
 
         RealTime rt = RealTime::fromSeconds(timestampSec);
-        Plugin::FeatureSet features = m_plugin->process(buffers, rt);
-
-        delete[] buffers; // Pointers only, data is in tempStorage
+        Plugin::FeatureSet features = m_plugin->process(buffers.data(), rt);
 
         return convertFeatures(features);
     }
@@ -128,11 +122,91 @@ public:
         return convertFeatures(features);
     }
 
+    // Parameters must be set before initialise()
+    void setParameter(std::string identifier, float value) {
+        if (m_plugin) m_plugin->setParameter(identifier, value);
+    }
+
+    // null if no plugin is loaded
+    val getParameter(std::string identifier) {
+        if (!m_plugin) return val::null();
+        return val(m_plugin->getParameter(identifier));
+    }
+
+    void reset() {
+        if (m_plugin) m_plugin->reset();
+    }
+
+    // Describe the loaded plugin: metadata, preferred sizes, parameters and outputs.
+    // Output indices in the objects returned by process() index into info.outputs.
+    val getPluginInfo() {
+        if (!m_plugin) return val::null();
+
+        val info = val::object();
+        info.set("identifier", m_plugin->getIdentifier());
+        info.set("name", m_plugin->getName());
+        info.set("description", m_plugin->getDescription());
+        info.set("maker", m_plugin->getMaker());
+        info.set("copyright", m_plugin->getCopyright());
+        info.set("pluginVersion", m_plugin->getPluginVersion());
+        info.set("preferredBlockSize", (double)m_plugin->getPreferredBlockSize());
+        info.set("preferredStepSize", (double)m_plugin->getPreferredStepSize());
+        info.set("minChannelCount", (double)m_plugin->getMinChannelCount());
+        info.set("maxChannelCount", (double)m_plugin->getMaxChannelCount());
+
+        val params = val::array();
+        for (const auto& p : m_plugin->getParameterDescriptors()) {
+            val o = val::object();
+            o.set("identifier", p.identifier);
+            o.set("name", p.name);
+            o.set("description", p.description);
+            o.set("unit", p.unit);
+            o.set("minValue", p.minValue);
+            o.set("maxValue", p.maxValue);
+            o.set("defaultValue", p.defaultValue);
+            o.set("isQuantized", p.isQuantized);
+            if (p.isQuantized) o.set("quantizeStep", p.quantizeStep);
+            val names = val::array();
+            for (const auto& n : p.valueNames) names.call<void>("push", n);
+            o.set("valueNames", names);
+            params.call<void>("push", o);
+        }
+        info.set("parameters", params);
+
+        val outputs = val::array();
+        for (const auto& d : m_plugin->getOutputDescriptors()) {
+            val o = val::object();
+            o.set("identifier", d.identifier);
+            o.set("name", d.name);
+            o.set("description", d.description);
+            o.set("unit", d.unit);
+            o.set("hasFixedBinCount", d.hasFixedBinCount);
+            if (d.hasFixedBinCount) o.set("binCount", (double)d.binCount);
+            o.set("hasKnownExtents", d.hasKnownExtents);
+            if (d.hasKnownExtents) {
+                o.set("minValue", d.minValue);
+                o.set("maxValue", d.maxValue);
+            }
+            const char* sampleType =
+                d.sampleType == Plugin::OutputDescriptor::OneSamplePerStep ? "OneSamplePerStep" :
+                d.sampleType == Plugin::OutputDescriptor::FixedSampleRate ? "FixedSampleRate" :
+                "VariableSampleRate";
+            o.set("sampleType", sampleType);
+            o.set("sampleRate", d.sampleRate);
+            o.set("hasDuration", d.hasDuration);
+            outputs.call<void>("push", o);
+        }
+        info.set("outputs", outputs);
+
+        return info;
+    }
+
 private:
     float m_sampleRate;
-    int m_channels;
-    int m_stepSize;
-    int m_blockSize;
+    int m_channels = 0;
+    int m_stepSize = 0;
+    int m_blockSize = 0;
+    bool m_initialised = false;
     Plugin *m_plugin;
 
     val convertFeatures(const Plugin::FeatureSet& features) {
@@ -186,6 +260,10 @@ EMSCRIPTEN_BINDINGS(vamp_host) {
         .function("initialise", &WasmVampHost::initialise)
         .function("process", &WasmVampHost::process)
         .function("getRemainingFeatures", &WasmVampHost::getRemainingFeatures)
+        .function("setParameter", &WasmVampHost::setParameter)
+        .function("getParameter", &WasmVampHost::getParameter)
+        .function("reset", &WasmVampHost::reset)
+        .function("getPluginInfo", &WasmVampHost::getPluginInfo)
         .function("setEnv", &WasmVampHost::setEnv)
         ;
     

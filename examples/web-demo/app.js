@@ -12,7 +12,7 @@ const outputEl = document.getElementById('output');
 const canvas = document.getElementById('waveform');
 const ctx = canvas.getContext('2d');
 
-// Initialize WASM Module
+// Initialise WASM Module
 const moduleConfig = {
     preRun: [(module) => {
         // Set environment variables before main runs
@@ -21,13 +21,19 @@ const moduleConfig = {
     }]
 };
 
+if (typeof VampHostModule === 'undefined') {
+    statusEl.textContent = "Error: could not load vamp-host.js (check that dist/ is served)";
+    statusEl.className = "status error";
+    throw new Error("VampHostModule is not defined");
+}
+
 VampHostModule(moduleConfig).then(async (module) => {
     hostModule = module;
-    console.log("WASM Module initialized");
+    console.log("WASM Module initialised");
     
     try {
         await loadSideModule();
-        initializeHost();
+        initialiseHost();
         statusEl.textContent = "Ready";
         statusEl.className = "status ready";
     } catch (err) {
@@ -59,7 +65,7 @@ async function loadSideModule() {
     for (const [pluginName, vfsName] of plugins) {
         try {
             // Fetch the plugin binary
-            const response = await fetch(`../dist/${pluginName}`);
+            const response = await fetch(`../../dist/${pluginName}`);
             if (!response.ok) {
                 console.warn(`Failed to fetch plugin ${pluginName}: ${response.statusText}`);
                 continue;
@@ -76,7 +82,7 @@ async function loadSideModule() {
     }
 }
 
-function initializeHost() {
+function initialiseHost() {
     // Create a temporary host just to list plugins
     // We use a dummy sample rate
     const tempHost = new hostModule.WasmVampHost(44100);
@@ -262,8 +268,8 @@ function processAudio(audioBuffer, pluginKey) {
     
     outputEl.textContent = JSON.stringify(results, null, 2);
     
-    // Render Visualization
-    renderVisualization(audioBuffer, results);
+    // Render Visualisation
+    renderVisualisation(audioBuffer, results);
 
     // Cleanup
     vampHost.delete();
@@ -286,9 +292,9 @@ function mergeFeatures(allResults, newFeatures) {
     }
 }
 
-// --- Visualization ---
+// --- Visualisation ---
 
-function renderVisualization(audioBuffer, results) {
+function renderVisualisation(audioBuffer, results) {
     // Use the global canvas and ctx defined at the top
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
@@ -341,14 +347,14 @@ function renderVisualization(audioBuffer, results) {
     }
 }
 
-function drawFeatureCurve(ctx, features, totalDuration, width, height, color) {
+function drawFeatureCurve(ctx, features, totalDuration, width, height, colour) {
     if (!features.length) return;
     
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = colour;
     ctx.lineWidth = 2;
     ctx.beginPath();
     
-    // Find max value for normalization
+    // Find max value for normalisation
     let maxVal = 0;
     for (const f of features) {
         if (f.values && f.values.length > 0) {
@@ -372,7 +378,7 @@ function drawFeatureCurve(ctx, features, totalDuration, width, height, color) {
     ctx.stroke();
 }
 
-function drawFeatureMarkers(ctx, features, totalDuration, width, height, color) {
+function drawFeatureMarkers(ctx, features, totalDuration, width, height, colour) {
     // Adjust alpha based on density to avoid "solid box" effect
     const density = features.length / width;
     let alpha = 0.7;
@@ -380,7 +386,7 @@ function drawFeatureMarkers(ctx, features, totalDuration, width, height, color) 
     if (density > 2) alpha = 0.1;
     if (density > 10) alpha = 0.05;
 
-    ctx.fillStyle = color;
+    ctx.fillStyle = colour;
     ctx.globalAlpha = alpha;
     
     for (const f of features) {

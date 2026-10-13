@@ -33,7 +33,7 @@ node test.js
 ### Web Demo
 1. Serve the root directory (e.g., using `python -m http.server` or `npx http-server`).
 2. Open `web-demo/index.html` in your browser.
-3. Select a plugin and drop an audio file to analyze.
+3. Select a plugin and drop an audio file to analyse.
 
 ### Using as a JavaScript Library
 
@@ -46,7 +46,7 @@ You can use the generated `vamp-host.js` in your own web or Node.js projects.
     <script src="dist/vamp-host.js"></script>
     ```
 
-2.  **Initialize the Module**:
+2.  **Initialise the Module**:
     ```javascript
     VampHostModule().then(hostModule => {
         // 1. Mount plugins to the virtual filesystem
@@ -71,7 +71,7 @@ You can use the generated `vamp-host.js` in your own web or Node.js projects.
             // Parameters must be set before initialise()
             host.setParameter("threshold", 0.5);
 
-            // 5. Initialize (channels, stepSize, blockSize)
+            // 5. Initialise (channels, stepSize, blockSize)
             host.initialise(1, 512, 1024);
 
             // 6. Process Audio

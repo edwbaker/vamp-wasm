@@ -43,12 +43,109 @@ VampHostModule(moduleConfig).then(async (module) => {
     }
 });
 
+const paramsEl = document.getElementById('params');
+
+// Current parameter values, keyed by identifier, for the selected plugin
+let paramValues = {};
+let rerunTimer = null;
+
 // Re-run processing when plugin changes
 pluginSelect.addEventListener('change', () => {
+    buildParameterControls(pluginSelect.value);
     if (currentAudioBuffer && pluginSelect.value) {
         processAudio(currentAudioBuffer, pluginSelect.value);
     }
 });
+
+function scheduleRerun() {
+    clearTimeout(rerunTimer);
+    rerunTimer = setTimeout(() => {
+        if (currentAudioBuffer && pluginSelect.value) {
+            processAudio(currentAudioBuffer, pluginSelect.value);
+        }
+    }, 250);
+}
+
+// Query the plugin's parameter descriptors and build an editor row for each
+function buildParameterControls(pluginKey) {
+    paramsEl.innerHTML = '';
+    paramValues = {};
+    if (!hostModule || !pluginKey) return;
+
+    const host = new hostModule.WasmVampHost(currentAudioBuffer ? currentAudioBuffer.sampleRate : 44100);
+    try {
+        if (!host.loadPlugin(pluginKey)) return;
+        const info = host.getPluginInfo();
+        for (const p of info.parameters) {
+            paramValues[p.identifier] = p.defaultValue;
+            paramsEl.appendChild(createParameterRow(p));
+        }
+    } finally {
+        host.delete();
+    }
+}
+
+function createParameterRow(p) {
+    const row = document.createElement('div');
+    row.className = 'param-row';
+    row.title = p.description || '';
+
+    const label = document.createElement('label');
+    label.textContent = p.unit ? `${p.name} (${p.unit})` : p.name;
+    row.appendChild(label);
+
+    const setValue = (v) => {
+        paramValues[p.identifier] = v;
+        scheduleRerun();
+    };
+
+    let reset;
+    if (p.isQuantized && p.valueNames && p.valueNames.length) {
+        // Enumerated parameter: dropdown of named values
+        const sel = document.createElement('select');
+        sel.style.margin = '0';
+        p.valueNames.forEach((name, i) => {
+            const o = document.createElement('option');
+            o.value = p.minValue + i * (p.quantizeStep || 1);
+            o.textContent = name;
+            sel.appendChild(o);
+        });
+        sel.value = p.defaultValue;
+        sel.addEventListener('change', () => setValue(parseFloat(sel.value)));
+        row.appendChild(sel);
+        reset = () => { sel.value = p.defaultValue; };
+    } else {
+        const step = p.isQuantized && p.quantizeStep ? p.quantizeStep : (p.maxValue - p.minValue) / 200 || 1;
+        const range = document.createElement('input');
+        range.type = 'range';
+        const num = document.createElement('input');
+        num.type = 'number';
+        for (const el of [range, num]) {
+            el.min = p.minValue;
+            el.max = p.maxValue;
+            el.step = step;
+            el.value = p.defaultValue;
+        }
+        range.addEventListener('input', () => { num.value = range.value; setValue(parseFloat(range.value)); });
+        num.addEventListener('change', () => {
+            const v = Math.min(p.maxValue, Math.max(p.minValue, parseFloat(num.value)));
+            if (isNaN(v)) return;
+            num.value = v;
+            range.value = v;
+            setValue(v);
+        });
+        row.appendChild(range);
+        row.appendChild(num);
+        reset = () => { range.value = num.value = p.defaultValue; };
+    }
+
+    // Select-type rows only have two grid cells filled, so add the reset button last
+    const btn = document.createElement('button');
+    btn.textContent = 'Reset';
+    btn.addEventListener('click', () => { reset(); setValue(p.defaultValue); });
+    row.appendChild(btn);
+    return row;
+}
 
 async function loadSideModule() {
     statusEl.textContent = "Loading plugins...";
@@ -110,8 +207,9 @@ function initialiseHost() {
         }
         pluginSelect.disabled = false;
     }
-    
+
     tempHost.delete();
+    buildParameterControls(pluginSelect.value);
 }
 
 // Drag and Drop Handlers
@@ -181,6 +279,11 @@ function processAudio(audioBuffer, pluginKey) {
     // Note: ZeroCrossing plugin prefers small blocks, but 1024 is standard.
     // However, if the plugin returns nothing, it might be because the audio is silent 
     // or the threshold is not met.
+    // Parameters must be applied before initialise()
+    for (const [id, value] of Object.entries(paramValues)) {
+        vampHost.setParameter(id, value);
+    }
+
     const blockSize = 1024;
     const stepSize = 1024; // No overlap for simplicity
     

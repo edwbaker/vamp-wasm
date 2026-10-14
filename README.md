@@ -50,6 +50,8 @@ You can use the generated `vamp-host.js` in your own web or Node.js projects.
 
 Plugins are loaded through `VampMultiHost`, which gives each plugin library its own module instance. Every library bundles its own copy of the Vamp SDK, and libraries sharing one module use each other's copy, so the plugins of the later-loaded library fail to initialise.
 
+Each release is also published, unchanged, to `https://cdn.audioblast.org/vamp-wasm/<version>/` (for example `https://cdn.audioblast.org/vamp-wasm/0.1.3/vamp-host.js`), alongside `vamp-host.wasm`, `vamp-multi-host.js` and the example plugins. Version directories are immutable.
+
 1.  **Include the Scripts**:
     ```html
     <script src="dist/vamp-host.js"></script>

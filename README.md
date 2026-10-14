@@ -109,3 +109,9 @@ The host supports dynamic loading of plugins compiled as Emscripten side modules
 ## Citing
 
 If you use this software, please cite it using the metadata in [CITATION.cff](CITATION.cff). GitHub's "Cite this repository" button provides APA and BibTeX formats.
+
+## License
+
+The host code in this repository is released under the [MIT License](LICENSE).
+
+`inst/vamp/` contains the Vamp Plugin SDK and example plugins, which are copyright Chris Cannam and Queen Mary, University of London, and are distributed under their own license; see [inst/vamp/COPYING](inst/vamp/COPYING).

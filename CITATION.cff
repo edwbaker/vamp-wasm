@@ -10,6 +10,7 @@ authors:
 version: 0.1.0
 date-released: 2026-10-14
 repository-code: "https://github.com/edwbaker/vamp-wasm"
+doi: 10.5281/zenodo.23370716
 license: MIT
 keywords:
   - vamp

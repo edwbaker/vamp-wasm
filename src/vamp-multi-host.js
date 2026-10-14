@@ -52,6 +52,14 @@
                 });
                 try { mod.FS.mkdir(VAMP_DIR); } catch (e) { /* already exists */ }
                 mod.FS.writeFile(`${VAMP_DIR}/${prefix}.so`, lib.data);
+                // The preRun ENV above does not reach the C environment the plugin loader reads,
+                // so set it there too; otherwise loadPlugin fails until listPlugins has run
+                const tmp = new mod.WasmVampHost(44100);
+                try {
+                    tmp.setEnv('VAMP_PATH', VAMP_DIR);
+                } finally {
+                    tmp.delete();
+                }
                 multi._modules.set(prefix, mod);
             }
             return multi;

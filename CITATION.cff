@@ -7,7 +7,7 @@ authors:
   - family-names: Baker
     given-names: Ed
     affiliation: "Natural History Museum"
-version: 0.1.3
+version: 0.1.4
 date-released: 2026-10-14
 repository-code: "https://github.com/edwbaker/vamp-wasm"
 doi: 10.5281/zenodo.23370715

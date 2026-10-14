@@ -51,7 +51,16 @@ function binValues(feature) {
 let multi;
 test.before(async () => {
     multi = await VampMultiHost.create(VampHostModule, libraries);
-    multi.listPlugins();   // also points each module at the plugin directory
+});
+
+test('loadPlugin works on a fresh multi-host without listing plugins first', async () => {
+    const fresh = await VampMultiHost.create(VampHostModule, libraries);
+    const host = fresh.createHost(SAMPLE_RATE);
+    try {
+        assert.ok(host.loadPlugin(`${EXAMPLE}:zerocrossing`));
+    } finally {
+        host.delete();
+    }
 });
 
 // Run fn with a host that has loaded and initialised the plugin, then release it

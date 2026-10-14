@@ -103,8 +103,7 @@ jobs:
 
       - name: Assemble site
         run: |
-          mkdir -p site/examples
-          cp -r examples/web-demo site/examples/web-demo
+          cp -r examples site/examples
           mkdir -p site/src
           cp src/vamp-multi-host.js site/src/
           echo '<meta http-equiv="refresh" content="0; url=examples/web-demo/">' > site/index.html

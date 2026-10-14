@@ -32,8 +32,10 @@ node test.js
 
 ### Web Demo
 1. Serve the root directory (e.g., using `python -m http.server` or `npx http-server`).
-2. Open `web-demo/index.html` in your browser.
+2. Open `examples/web-demo/index.html` in your browser.
 3. Select a plugin and drop an audio file to analyse.
+
+`examples/wavesurfer-demo/index.html` is a second demo that shows the audio with [wavesurfer.js](https://wavesurfer.xyz) (waveform, spectrogram, playback), loaded from `cdn.audioblast.org`. Timestamped plugin features are drawn as regions on the waveform and every output is listed in a table.
 
 ### Using as a JavaScript Library
 
@@ -99,5 +101,6 @@ The host supports dynamic loading of plugins compiled as Emscripten side modules
 
 - `src/WasmHost.cpp`: The C++ host implementation using Embind.
 - `src/vamp-multi-host.js`: Loads each plugin library into its own module instance.
-- `web-demo/`: Simple web interface for testing.
+- `examples/web-demo/`: Simple web interface for testing.
+- `examples/wavesurfer-demo/`: Demo using wavesurfer.js for waveform, spectrogram and playback.
 - `inst/vamp/`: Source code for the Vamp SDK and example plugins.

@@ -66,6 +66,18 @@
             max-height: 400px;
             overflow-y: auto;
         }
+        #params { margin-top: 10px; }
+        .param-row {
+            display: grid;
+            grid-template-columns: 180px 1fr 110px auto;
+            gap: 10px;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 14px;
+        }
+        .param-row input[type=number] { width: 100px; padding: 4px; }
+        .param-row select { grid-column: span 2; }
+        .param-row button { margin: 0; padding: 4px 8px; }
         canvas {
             width: 100%;
             height: 200px;
@@ -93,6 +105,7 @@
             <select id="plugin-select" disabled>
                 <option value="">Loading plugins...</option>
             </select>
+            <div id="params"></div>
         </div>
 
         <div class="drop-zone" id="drop-zone">

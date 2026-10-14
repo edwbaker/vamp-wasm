@@ -1,5 +1,7 @@
 # Vamp Wasm Host
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23370716.svg)](https://doi.org/10.5281/zenodo.23370716)
+
 This directory contains a WebAssembly implementation of a Vamp Plugin Host, allowing you to run Vamp plugins in a web browser or Node.js environment.
 
 ## Prerequisites

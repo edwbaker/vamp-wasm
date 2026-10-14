@@ -6,6 +6,7 @@
   "files": [
     "dist/vamp-host.js",
     "dist/vamp-host.wasm",
+    "src/vamp-multi-host.js",
     "dist/vamp-example-plugins.so"
   ],
   "scripts": {

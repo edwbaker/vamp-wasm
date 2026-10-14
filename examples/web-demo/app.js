@@ -1,5 +1,5 @@
 
-let hostModule = null;
+let multiHost = null;
 let vampHost = null;
 let audioContext = null;
 let currentAudioBuffer = null;
@@ -12,27 +12,26 @@ const outputEl = document.getElementById('output');
 const canvas = document.getElementById('waveform');
 const ctx = canvas.getContext('2d');
 
-// Initialise WASM Module
-const moduleConfig = {
-    preRun: [(module) => {
-        // Set environment variables before main runs
-        module.ENV = module.ENV || {};
-        module.ENV['VAMP_PATH'] = '/vamp';
-    }]
-};
+// Plugin libraries in dist/ as [file, name in the virtual filesystem]. The plugin key prefix
+// comes from the name, so vamp-ecoacoustics.wasm becomes vamp-ecoacoustics:<plugin>.
+const pluginLibraries = [
+    ['vamp-example-plugins.so', 'vamp-example-plugins.so'],
+    ['vamp-ecoacoustics.wasm', 'vamp-ecoacoustics.so'],
+];
 
-if (typeof VampHostModule === 'undefined') {
-    statusEl.textContent = "Error: could not load vamp-host.js (check that dist/ is served)";
+if (typeof VampHostModule === 'undefined' || typeof VampMultiHost === 'undefined') {
+    statusEl.textContent = "Error: could not load vamp-host.js or vamp-multi-host.js (check that they are served)";
     statusEl.className = "status error";
-    throw new Error("VampHostModule is not defined");
+    throw new Error("VampHostModule or VampMultiHost is not defined");
 }
 
-VampHostModule(moduleConfig).then(async (module) => {
-    hostModule = module;
-    console.log("WASM Module initialised");
-    
+(async () => {
     try {
-        await loadSideModule();
+        statusEl.textContent = "Loading plugins...";
+        const libraries = await fetchPluginLibraries();
+        // Each library gets its own module instance, so libraries cannot interfere with each other
+        multiHost = await VampMultiHost.create(VampHostModule, libraries);
+        console.log("WASM modules initialised");
         initialiseHost();
         statusEl.textContent = "Ready";
         statusEl.className = "status ready";
@@ -41,7 +40,7 @@ VampHostModule(moduleConfig).then(async (module) => {
         statusEl.textContent = "Error: " + err.message;
         statusEl.className = "status error";
     }
-});
+})();
 
 const paramsEl = document.getElementById('params');
 
@@ -70,9 +69,9 @@ function scheduleRerun() {
 function buildParameterControls(pluginKey) {
     paramsEl.innerHTML = '';
     paramValues = {};
-    if (!hostModule || !pluginKey) return;
+    if (!multiHost || !pluginKey) return;
 
-    const host = new hostModule.WasmVampHost(currentAudioBuffer ? currentAudioBuffer.sampleRate : 44100);
+    const host = multiHost.createHost(currentAudioBuffer ? currentAudioBuffer.sampleRate : 44100);
     try {
         if (!host.loadPlugin(pluginKey)) return;
         const info = host.getPluginInfo();
@@ -147,59 +146,36 @@ function createParameterRow(p) {
     return row;
 }
 
-async function loadSideModule() {
-    statusEl.textContent = "Loading plugins...";
-    
-    try { hostModule.FS.mkdir('/vamp'); } catch(e) {}
-
-    // [file in dist/, name in the virtual filesystem]. The plugin key prefix comes from the
-    // filename, so vamp-ecoacoustics.wasm becomes vamp-ecoacoustics:<plugin>.
-    const plugins = [
-        ['vamp-example-plugins.so', 'vamp-example-plugins.so'],
-        ['vamp-ecoacoustics.wasm', 'vamp-ecoacoustics.so'],
-    ];
-
-    for (const [pluginName, vfsName] of plugins) {
+async function fetchPluginLibraries() {
+    const libraries = [];
+    for (const [fileName, name] of pluginLibraries) {
         try {
-            // Fetch the plugin binary
-            const response = await fetch(`../../dist/${pluginName}`);
+            const response = await fetch(`../../dist/${fileName}`);
             if (!response.ok) {
-                console.warn(`Failed to fetch plugin ${pluginName}: ${response.statusText}`);
+                console.warn(`Failed to fetch plugin ${fileName}: ${response.statusText}`);
                 continue;
             }
-            
-            const buffer = await response.arrayBuffer();
-            const data = new Uint8Array(buffer);
-            
-            hostModule.FS.writeFile(`/vamp/${vfsName}`, data);
-            console.log(`${pluginName} written to virtual filesystem`);
+            libraries.push({ name, data: new Uint8Array(await response.arrayBuffer()) });
+            console.log(`${fileName} fetched`);
         } catch (err) {
-            console.error(`Error loading ${pluginName}:`, err);
+            console.error(`Error loading ${fileName}:`, err);
         }
     }
+    return libraries;
 }
 
 function initialiseHost() {
-    // Create a temporary host just to list plugins
-    // We use a dummy sample rate
-    const tempHost = new hostModule.WasmVampHost(44100);
-    
-    // Explicitly set VAMP_PATH to ensure the host finds the plugins
-    tempHost.setEnv("VAMP_PATH", "/vamp");
-    
-    // List plugins
-    const plugins = tempHost.listPlugins();
+    const plugins = multiHost.listPlugins();
     console.log("Plugins found:", plugins);
-    
+
     pluginSelect.innerHTML = '';
-    if (plugins.size() === 0) {
+    if (plugins.length === 0) {
         const option = document.createElement('option');
         option.text = "No plugins found (check console)";
         pluginSelect.add(option);
         pluginSelect.disabled = true;
     } else {
-        for (let i = 0; i < plugins.size(); i++) {
-            const key = plugins.get(i);
+        for (const key of plugins) {
             const option = document.createElement('option');
             option.value = key;
             option.text = key;
@@ -208,7 +184,6 @@ function initialiseHost() {
         pluginSelect.disabled = false;
     }
 
-    tempHost.delete();
     buildParameterControls(pluginSelect.value);
 }
 
@@ -235,7 +210,7 @@ dropZone.addEventListener('drop', (e) => {
 
 async function handleFile(file) {
     if (!file) return;
-    if (!hostModule) return;
+    if (!multiHost) return;
     
     const pluginKey = pluginSelect.value;
     if (!pluginKey) {
@@ -269,9 +244,10 @@ function processAudio(audioBuffer, pluginKey) {
     const numChannels = audioBuffer.numberOfChannels;
     
     // Create host
-    vampHost = new hostModule.WasmVampHost(sampleRate);
+    vampHost = multiHost.createHost(sampleRate);
     
     if (!vampHost.loadPlugin(pluginKey)) {
+        vampHost.delete();
         throw new Error(`Failed to load plugin ${pluginKey}`);
     }
     
@@ -304,6 +280,7 @@ function processAudio(audioBuffer, pluginKey) {
     }
 
     if (!vampHost.initialise(processingChannels, stepSize, blockSize)) {
+         vampHost.delete();
          throw new Error(`Failed to initialise plugin with ${processingChannels} channels, step ${stepSize}, block ${blockSize}`);
     }
     

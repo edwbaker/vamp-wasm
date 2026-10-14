@@ -39,49 +39,52 @@ node test.js
 
 You can use the generated `vamp-host.js` in your own web or Node.js projects.
 
-**Important**: You must serve both `vamp-host.js` and `vamp-host.wasm`. The JavaScript file automatically fetches the WASM file. By default, it expects `vamp-host.wasm` to be in the same directory as `vamp-host.js`.
+**Important**: You must serve `vamp-host.js`, `vamp-host.wasm` and `src/vamp-multi-host.js`. The JavaScript file automatically fetches the WASM file. By default, it expects `vamp-host.wasm` to be in the same directory as `vamp-host.js`.
 
-1.  **Include the Script**:
+Plugins are loaded through `VampMultiHost`, which gives each plugin library its own module instance. Every library bundles its own copy of the Vamp SDK, and libraries sharing one module use each other's copy, so the plugins of the later-loaded library fail to initialise.
+
+1.  **Include the Scripts**:
     ```html
     <script src="dist/vamp-host.js"></script>
+    <script src="src/vamp-multi-host.js"></script>
+    ```
+    In Node.js, use `require('./dist/vamp-host.js')` and `require('./src/vamp-multi-host.js')`.
+
+2.  **Load the Plugin Libraries**:
+    ```javascript
+    // Each library is the content of a plugin .so as a Uint8Array. The plugin key prefix
+    // is the name without its extension.
+    const multi = await VampMultiHost.create(VampHostModule, [
+        { name: 'my-plugin.so', data: pluginBinaryData },
+    ]);
+    multi.listPlugins();                  // ['my-plugin:identifier', ...]
     ```
 
-2.  **Initialise the Module**:
+3.  **Create a Host and Load a Plugin**:
     ```javascript
-    VampHostModule().then(hostModule => {
-        // 1. Mount plugins to the virtual filesystem
-        // (Assuming you have fetched the .so file content as a Uint8Array)
-        hostModule.FS.mkdir('/vamp');
-        hostModule.FS.writeFile('/vamp/my-plugin.so', pluginBinaryData);
+    const sampleRate = 44100;
+    const host = multi.createHost(sampleRate);
 
-        // 2. Create the Host
-        const sampleRate = 44100;
-        const host = new hostModule.WasmVampHost(sampleRate);
-        
-        // 3. Configure Environment
-        host.setEnv("VAMP_PATH", "/vamp");
+    if (host.loadPlugin("my-plugin:identifier")) {
 
-        // 4. Load a Plugin
-        if (host.loadPlugin("my-plugin:identifier")) {
+        // Metadata, preferred block/step sizes, parameters and outputs.
+        // Output indices in the features from process() index info.outputs.
+        const info = host.getPluginInfo();
 
-            // Metadata, preferred block/step sizes, parameters and outputs.
-            // Output indices in the features from process() index info.outputs.
-            const info = host.getPluginInfo();
+        // Parameters must be set before initialise()
+        host.setParameter("threshold", 0.5);
 
-            // Parameters must be set before initialise()
-            host.setParameter("threshold", 0.5);
+        // Initialise (channels, stepSize, blockSize)
+        host.initialise(1, 512, 1024);
 
-            // 5. Initialise (channels, stepSize, blockSize)
-            host.initialise(1, 512, 1024);
+        // Process Audio
+        // Input must be an array of Float32Arrays (one per channel)
+        const inputBlock = [new Float32Array(1024)];
+        const features = host.process(inputBlock, 0.0); // timestamp
 
-            // 6. Process Audio
-            // Input must be an array of Float32Arrays (one per channel)
-            const inputBlock = [new Float32Array(1024)]; 
-            const features = host.process(inputBlock, 0.0); // timestamp
-            
-            console.log(features);
-        }
-    });
+        console.log(features);
+        host.delete();
+    }
     ```
 
 ## Plugins
@@ -95,5 +98,6 @@ The host supports dynamic loading of plugins compiled as Emscripten side modules
 ## Project Structure
 
 - `src/WasmHost.cpp`: The C++ host implementation using Embind.
+- `src/vamp-multi-host.js`: Loads each plugin library into its own module instance.
 - `web-demo/`: Simple web interface for testing.
 - `inst/vamp/`: Source code for the Vamp SDK and example plugins.

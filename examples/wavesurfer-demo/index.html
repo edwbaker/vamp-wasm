@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vamp Plugin WASM Host - wavesurfer.js Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { margin-top: 0; color: #333; }
+        h2 { font-size: 16px; margin: 20px 0 6px; }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #eee;
+            border-radius: 4px;
+        }
+        select, button, input[type=number] {
+            padding: 8px 12px;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .param-row {
+            display: grid;
+            grid-template-columns: 200px 130px 1fr;
+            gap: 10px;
+            align-items: center;
+            margin: 6px 0;
+            font-size: 14px;
+        }
+        .param-row input { width: 110px; padding: 4px; margin: 0; }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            background: #fafafa;
+            cursor: pointer;
+        }
+        .drop-zone.dragover { border-color: #2196F3; background: #e3f2fd; }
+        #waveform { margin-top: 10px; }
+        #player { display: none; margin-top: 10px; }
+        table { border-collapse: collapse; font-size: 13px; }
+        th, td { border-bottom: 1px solid #ddd; padding: 3px 12px; text-align: left; }
+        .scroll { max-height: 300px; overflow-y: auto; }
+        .status { margin-bottom: 10px; font-weight: bold; }
+        .status.ready { color: green; }
+        .status.loading { color: orange; }
+        .status.error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vamp Plugin WASM Host</h1>
+        <div id="status" class="status loading">Loading...</div>
+
+        <div class="controls">
+            <label for="plugin-select">Plugin:</label>
+            <select id="plugin-select" disabled></select>
+            <div id="params"></div>
+            <button id="run" disabled>Run</button>
+        </div>
+
+        <div id="drop-zone" class="drop-zone">Drag and drop an audio file here (WAV, MP3, etc.)</div>
+        <input type="file" id="file-input" accept="audio/*" style="display: none;">
+
+        <div id="player"><button id="play-pause">Play / Pause</button></div>
+        <div id="waveform"></div>
+
+        <div id="results"></div>
+    </div>
+
+    <script src="https://cdn.audioblast.org/wavesurfer/8.0.2/wavesurfer.min.js"></script>
+    <script src="https://cdn.audioblast.org/wavesurfer/8.0.2/plugins/regions.min.js"></script>
+    <script src="https://cdn.audioblast.org/wavesurfer/8.0.2/plugins/spectrogram.min.js"></script>
+    <script src="https://cdn.audioblast.org/wavesurfer/8.0.2/plugins/timeline.min.js"></script>
+    <script src="../../dist/vamp-host.js"></script>
+    <script src="../../src/vamp-multi-host.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

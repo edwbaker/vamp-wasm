@@ -1,7 +1,15 @@
 {
   "name": "vamp-wasm-host",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "WebAssembly Vamp Plugin Host",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edwbaker/vamp-wasm.git"
+  },
+  "homepage": "https://github.com/edwbaker/vamp-wasm#readme",
+  "bugs": {
+    "url": "https://github.com/edwbaker/vamp-wasm/issues"
+  },
   "main": "dist/vamp-host.js",
   "files": [
     "dist/vamp-host.js",

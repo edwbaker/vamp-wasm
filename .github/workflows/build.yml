@@ -77,11 +77,13 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
-      # Trusted publishing (OIDC) needs npm 11.5.1 or later; no token is stored
-      - name: Publish to npm
+      # Trusted publishing (OIDC) with staged publishing: no token is stored, and a maintainer
+      # approves each version with 2FA (npm stage approve, or the Staged Packages tab on npmjs.com).
+      # Needs npm 11.15.0 or later.
+      - name: Stage npm publish
         run: |
           npm install -g npm@latest
-          npm publish --access public
+          npm stage publish
 
   pages:
     name: Deploy web demo

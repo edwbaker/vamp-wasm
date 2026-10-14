@@ -60,6 +60,7 @@ Plugins are loaded through `VampMultiHost`, which gives each plugin library its 
         { name: 'my-plugin.so', data: pluginBinaryData },
     ]);
     multi.listPlugins();                  // ['my-plugin:identifier', ...]
+    multi.describePlugins();              // [{ key, library, name, description, maker }, ...]
     ```
 
 3.  **Create a Host and Load a Plugin**:

@@ -12,6 +12,7 @@
 //       { name: 'vamp-ecoacoustics.so', data: ecoBytes },
 //   ]);
 //   multi.listPlugins();                     // ['vamp-ecoacoustics:aci', ...]
+//   multi.describePlugins();                 // [{ key, library, name, description, maker }, ...]
 //   const host = multi.createHost(44100);    // same API as WasmVampHost
 //   host.loadPlugin('vamp-ecoacoustics:aci');
 
@@ -73,6 +74,25 @@
                 }
             }
             return [...new Set(keys)];
+        }
+
+        // Key, library and descriptive metadata (name, description, maker) of every plugin
+        describePlugins() {
+            return this.listPlugins().map((key) => {
+                const host = this.createHost(44100);
+                try {
+                    const info = host.loadPlugin(key) ? host.getPluginInfo() : null;
+                    return {
+                        key,
+                        library: key.slice(0, Math.max(key.lastIndexOf(':'), 0)),
+                        name: (info && info.name) || key,
+                        description: (info && info.description) || '',
+                        maker: (info && info.maker) || '',
+                    };
+                } finally {
+                    host.delete();
+                }
+            });
         }
 
         createHost(sampleRate) {

@@ -165,7 +165,7 @@ async function fetchPluginLibraries() {
 }
 
 function initialiseHost() {
-    const plugins = multiHost.listPlugins();
+    const plugins = multiHost.describePlugins();
     console.log("Plugins found:", plugins);
 
     pluginSelect.innerHTML = '';
@@ -175,11 +175,17 @@ function initialiseHost() {
         pluginSelect.add(option);
         pluginSelect.disabled = true;
     } else {
-        for (const key of plugins) {
-            const option = document.createElement('option');
-            option.value = key;
-            option.text = key;
-            pluginSelect.add(option);
+        // Plugin names, grouped by the library they come from
+        const groups = {};
+        for (const p of plugins) {
+            if (!groups[p.library]) {
+                groups[p.library] = document.createElement('optgroup');
+                groups[p.library].label = p.library;
+                pluginSelect.appendChild(groups[p.library]);
+            }
+            const option = new Option(p.name, p.key);
+            option.title = p.description;
+            groups[p.library].appendChild(option);
         }
         pluginSelect.disabled = false;
     }

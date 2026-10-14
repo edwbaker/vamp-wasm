@@ -41,11 +41,22 @@ async function fetchPluginLibraries() {
     try {
         // Each library gets its own module instance, so libraries cannot interfere with each other
         multiHost = await VampMultiHost.create(VampHostModule, await fetchPluginLibraries());
-        const keys = multiHost.listPlugins();
-        for (const key of keys) pluginSelect.add(new Option(key, key));
-        pluginSelect.disabled = keys.length === 0;
+        const plugins = multiHost.describePlugins();
+        // Plugin names, grouped by the library they come from
+        const groups = {};
+        for (const p of plugins) {
+            if (!groups[p.library]) {
+                groups[p.library] = document.createElement('optgroup');
+                groups[p.library].label = p.library;
+                pluginSelect.appendChild(groups[p.library]);
+            }
+            const option = new Option(p.name, p.key);
+            option.title = p.description;
+            groups[p.library].appendChild(option);
+        }
+        pluginSelect.disabled = plugins.length === 0;
         buildParameterControls();
-        setStatus(keys.length ? 'Ready' : 'No plugins found (check console)', keys.length ? 'ready' : 'error');
+        setStatus(plugins.length ? 'Ready' : 'No plugins found (check console)', plugins.length ? 'ready' : 'error');
     } catch (err) {
         console.error(err);
         setStatus('Error: ' + err.message, 'error');

@@ -105,3 +105,7 @@ The host supports dynamic loading of plugins compiled as Emscripten side modules
 - `examples/web-demo/`: Simple web interface for testing.
 - `examples/wavesurfer-demo/`: Demo using wavesurfer.js for waveform, spectrogram and playback.
 - `inst/vamp/`: Source code for the Vamp SDK and example plugins.
+
+## Citing
+
+If you use this software, please cite it using the metadata in [CITATION.cff](CITATION.cff). GitHub's "Cite this repository" button provides APA and BibTeX formats.

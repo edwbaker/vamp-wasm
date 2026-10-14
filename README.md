@@ -1,6 +1,9 @@
 # Vamp Wasm Host
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23370715.svg)](https://doi.org/10.5281/zenodo.23370715)
+[![npm](https://img.shields.io/npm/v/vamp-wasm-host)](https://www.npmjs.com/package/vamp-wasm-host)
+[![Build](https://github.com/edwbaker/vamp-wasm/actions/workflows/build.yml/badge.svg)](https://github.com/edwbaker/vamp-wasm/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/github/license/edwbaker/vamp-wasm)](LICENSE)
 
 This directory contains a WebAssembly implementation of a Vamp Plugin Host, allowing you to run Vamp plugins in a web browser or Node.js environment.
 

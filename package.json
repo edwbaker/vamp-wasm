@@ -24,7 +24,7 @@
     "start": "serve ."
   },
   "author": "ReVAMP",
-  "license": "MIT",
+  "license": "GPL-2.0-or-later",
   "devDependencies": {
     "serve": "^14.0.0"
   }

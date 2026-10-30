@@ -3,7 +3,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23370715.svg)](https://doi.org/10.5281/zenodo.23370715)
 [![npm](https://img.shields.io/npm/v/vamp-wasm-host)](https://www.npmjs.com/package/vamp-wasm-host)
 [![Build](https://github.com/edwbaker/vamp-wasm/actions/workflows/build.yml/badge.svg)](https://github.com/edwbaker/vamp-wasm/actions/workflows/build.yml)
-[![License: MIT](https://img.shields.io/github/license/edwbaker/vamp-wasm)](LICENSE)
+[![License: GPL-2.0-or-later](https://img.shields.io/badge/license-GPL--2.0--or--later-blue)](LICENSE)
 
 This directory contains a WebAssembly implementation of a Vamp Plugin Host, allowing you to run Vamp plugins in a web browser or Node.js environment.
 
@@ -119,6 +119,6 @@ If you use this software, please cite it using the metadata in [CITATION.cff](CI
 
 ## License
 
-The host code in this repository is released under the [MIT License](LICENSE).
+The host code in this repository is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 2 of the License, or (at your option) any later version (GPL-2.0-or-later). The text of version 2 is in [LICENSE](LICENSE).
 
 `inst/vamp/` contains the Vamp Plugin SDK and example plugins, which are copyright Chris Cannam and Queen Mary, University of London, and are distributed under their own license; see [inst/vamp/COPYING](inst/vamp/COPYING).

@@ -11,7 +11,7 @@ version: 0.1.4
 date-released: 2026-10-14
 repository-code: "https://github.com/edwbaker/vamp-wasm"
 doi: 10.5281/zenodo.23370715
-license: MIT
+license: GPL-2.0-or-later
 keywords:
   - vamp
   - webassembly
